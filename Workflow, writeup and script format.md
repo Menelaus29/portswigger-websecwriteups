@@ -13,7 +13,7 @@
 - **Difficulty:** Apprentice / Practitioner / Expert
 - **Category:** e.g., SQL Injection
 - **Lab URL:** https://portswigger.net/web-security/...
-- **Date Solved:** YYYY-MM-DD
+- **Date Solved:** DD-MM-YYYY
 
 ## Vulnerability Summary
 
@@ -60,6 +60,7 @@ import argparse
 from bs4 import BeautifulSoup
 
 # Disable SSL warnings for Burp proxy use
+
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -73,23 +74,22 @@ def get_csrf_token(session: requests.Session, url: str) -> str:
     if not tag or not hasattr(tag, "attrs"):
         raise ValueError("CSRF token not found")
     return str(tag["value"])
-
+    
 def exploit(target_url: str) -> None:
-    session = requests.Session()
-    # session.proxies = PROXY  # Uncomment to route through Burp
+    session = requests.Session()
+    # session.proxies = PROXY  # Uncomment to route through Burp
 
-    print(f"Target: {target_url}")
+    print(f"Target: {target_url}")
 
-    # --- YOUR EXPLOIT LOGIC HERE ---
-
+    # --- YOUR EXPLOIT LOGIC HERE ---
+    
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("url", help="Target lab URL")
-    args = parser.parse_args()
-    exploit(args.url.rstrip("/"))
-	
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("url", help="Target lab URL")
+    args = parser.parse_args()
+    exploit(args.url.rstrip("/"))
+    
 if __name__ == "__main__":
-    main()
-    
+    main()
 ````    
 Rule of thumb: **GET requests that only read data → no CSRF token needed. POST requests that submit forms → almost always need one.**
