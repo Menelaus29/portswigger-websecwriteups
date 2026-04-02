@@ -10,7 +10,7 @@ The product category filter passes user input directly into a SQL `WHERE` clause
 ## Reconnaissance
 
 - Clicking any category, e.g. Accessories, produces this request: `GET /filter?category=Accessories` and takes us to the URL where items are filtered by `filter?category=Accessories` . The webapp is likely filtering a database table by category. This filtering mechanism shows/hides products depends on the category selected.
-- Testing `'` in the URL parameter throws a `500 Internal Server Error`. Input is being interpreted as SQL query, no sanitization. 
+- Testing `'` in the URL parameter throws a `500 Internal Server Error`. User input is being interpreted as SQL query, no sanitization, and this error suggests unhandled SQL syntax error.
 ## Exploitation Steps
 
 With Burp Suite:

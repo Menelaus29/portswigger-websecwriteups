@@ -1,4 +1,3 @@
-
 ## Metadata
 
 - **Difficulty:** Apprentice
@@ -9,7 +8,8 @@
 
 The login parameters inputting screen passes user input to check login credentials by performing a SQL query. Injecting a common username, e.g. `admin` or `administrator` with the SQL comment sequence `--` allows us to bypass the password check, logging us in as the user with the username.
 ## Reconnaissance
-- Testing `'` in the URL parameter throws a `500 Internal Server Error`. Input is being interpreted as SQL query, no sanitization. 
+
+- Testing `'` in the URL parameter throws a `500 Internal Server Error`. User input is being interpreted as SQL query, no sanitization, and this error suggests unhandled SQL syntax error.
 ## Exploitation Steps
 
 With Burp Suite:
