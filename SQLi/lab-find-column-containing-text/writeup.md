@@ -8,11 +8,9 @@
 ## Vulnerability Summary
 
 The product category filter passes user input directly into a SQL `WHERE` clause of a `SELECT`statement without sanitization. Injecting `UNION SELECT` payloads with `NULL` values allows us to find the number of columns returned by the query. After that, by submitting a series of `UNION SELECT` payloads that place a string value into each column, we can find the column with the ability hold string data, thus making the database retrieve the string assigned to us at random.
-
 ## Reconnaissance
 
 Same as [Writeup for lab-determine-number-of-columns](../lab-determine-number-of-columns/writeup.md)
-
 ## Exploitation Steps
 
 First, find the number of columns returned by the original query. See exploitation steps in [Writeup for lab-determine-number-of-columns](../lab-determine-number-of-columns/writeup.md). It would be 3. After that:
