@@ -28,7 +28,7 @@ But these information are already given by the lab's description. For what to do
 ## Payload Used
 
 `' AND (SELECT CASE WHEN (SUBSTR(password,1,1)='a') THEN TO_CHAR(1/0) ELSE 'a' END FROM users WHERE username='administrator')='a`
-As the known user determining process is done by performing a SQL query with the cookie, as long as we have a legit TrackingID (which is obtainable after performing any type of requests), we can append an `AND SELECT` statement to retrieve information by triggering the injected clause and observe whether the response is `500 Internal Server Error` (our injected condition is true) appears or `200 OK` (our injected condition is false). In this case, `SUBSTR(password,1,1)`is an attempt to find each character of the password (by increasing the first `1`, e.g. `SUBSTRING(password,2,1)`) sequentially, and `'a'` is the character being tested.  
+As the known user determining process is done by performing a SQL query with the cookie, as long as we have a legit TrackingID (which is obtainable after performing any type of requests), we can append an `AND SELECT` statement to retrieve information by triggering the injected clause and observe whether the response is `500 Internal Server Error` (our injected condition is true) appears or `200 OK` (our injected condition is false). In this case, `SUBSTR(password,1,1)`is an attempt to find each character of the password (by increasing the first `1`, e.g. `SUBSTR(password,2,1)`) sequentially, and `'a'` is the character being tested.  
 ## Root Cause
 
 User-controlled input is concatenated into a SQL query with no escaping or parameterization.
