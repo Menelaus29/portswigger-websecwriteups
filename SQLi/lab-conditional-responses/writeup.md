@@ -1,4 +1,4 @@
- ## Metadata
+## Metadata
 
 - **Difficulty:** Practitioner
 - **Category:** SQL Injection
@@ -23,11 +23,11 @@ The application is vulnerable to a Boolean-based blind SQL injection in its trac
 Normally, after the first step, we have to:
 1. List the names of all the tables in the database. This is crucial for finding the login credentials for a specific account, as one specific table will contain these information. We need to find the name of this table.
 2. After that, we need to list all the column names of that table, in order to the find the names of the ones that contain users' usernames and passwords.
-But these information are already given by the lab's description. For what to do in a practical (legal!!!) situation, or when no information is given, refer to [Writeup for lab-listing-database-contents-non-oracle](../lab_listing-database-contents-non-oracle/writeup.md). To confirm that the table `users` exists, inject `'+AND+(SELECT+'a'FROM+users+LIMIT+1)='a`. To confirm that the username `administrator` exists, inject `'+AND+(SELECT+'a'FROM+users+WHERE+username='administrator')='a`. 
+But these information are already given by the lab's description. For what to do in a practical (legal!!!) situation, or when no information is given, refer to [Writeup for lab-listing-database-contents-non-oracle](../lab-listing-database-contents-non-oracle/writeup.md). To confirm that the table `users` exists, inject `'+AND+(SELECT+'a'FROM+users+LIMIT+1)='a`. To confirm that the username `administrator` exists, inject `'+AND+(SELECT+'a'FROM+users+WHERE+username='administrator')='a`. 
 ## Payload Used
 
 `'+AND+(SELECT+SUBSTRING(password,1,1)+FROM+users+WHERE+username='administrator')='a`
-As the known user determining process is done by performing a SQL with the cookie, as long as we have a legit TrackingID (which is obtainable after performing any type of requests), we can append an `AND SELECT` statement to retrieve information by triggering the injected clause and observe whether `Welcome back` (our injected condition is true) appears or not (our injected condition is false). In this case, `SUBSTRING(password,1,1)`is an attempt to find each character of the password (by increasing the first `1`, e.g. `SUBSTRING(password,2,1)`) sequentially, and `'a` is the character being tested.  
+As the known user determining process is done by performing a SQL query with the cookie, as long as we have a legit TrackingID (which is obtainable after performing any type of requests), we can append an `AND SELECT` statement to retrieve information by triggering the injected clause and observe whether `Welcome back` (our injected condition is true) appears or not (our injected condition is false). In this case, `SUBSTRING(password,1,1)`is an attempt to find each character of the password (by increasing the first `1`, e.g. `SUBSTRING(password,2,1)`) sequentially, and `'a` is the character being tested.  
 ## Root Cause
 
 User-controlled input is concatenated into a SQL query with no escaping or parameterization.
