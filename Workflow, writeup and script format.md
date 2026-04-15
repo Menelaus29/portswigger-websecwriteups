@@ -14,7 +14,7 @@
 - **Category:** e.g., SQL Injection
 - **Lab URL:** https://portswigger.net/web-security/...
 - **Date Solved:** DD-MM-YYYY
-
+  
 ## Vulnerability Summary
 
 One paragraph. What is the vulnerability, where does it exist 
