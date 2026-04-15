@@ -17,6 +17,11 @@ The vulnerability is **Information Disclosure via Verbose Error Messages**. Spec
 3. Change the value of the `username` field to the the valid username you just got. Now we need to find the password for this username. Just do the same thing as you did before with brute forcing the username: set payload position to be the value of the `password` field, paste the list of **candidate passwords** (also provided by the lab) onto the **Payload configuration** settings, then start a **Sniper Attack**. After the attack's done, sort the responses by their length in **ascending** order. You should see that there's exactly 1 response that is significantly shorter in length from the others. When you check the details of this response, you should see that the status code is `302 Found`, indicating a redirection. Using the obtained username and this password to log in, you should success. Lab is solved!
 
 Notes: A consistent approach to identifying the distinctive responses is to configure the **Grep - Match** settings to flag results containing `Incorrect password` and `302 Found`.
+## Payload Used
+
+[Candidate username list](../candidateusernames.txt)
+[Candidate password list](../candidatepasswords.txt)
+These lists are provided by PortSwigger.
 ## Root Cause
 
 The app returns verbose error messages for authentication failures based on the validity of the username, leaking sensitive information. Coupled with the lack of rate limiting, the vulnerability is exploitable through brute forcing.
