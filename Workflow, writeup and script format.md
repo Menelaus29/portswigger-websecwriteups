@@ -79,7 +79,7 @@ def exploit(target_url: str) -> None:
     session = requests.Session()
     # session.proxies = PROXY  # Uncomment to route through Burp
 
-    print(f"Target: {target_url}")
+    print(f"[*] Target: {target_url}")
 
     # --- YOUR EXPLOIT LOGIC HERE ---
     
