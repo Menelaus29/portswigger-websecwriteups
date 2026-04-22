@@ -52,7 +52,7 @@ This suggests that we have bypassed access controls, and gained administrative f
 ## Exploitation Steps
 
 1. Click on the "View details" button under any random item. You will be taken to `url/product?productId=[number]`.
-2. Intercept the request where you click "Check stock" with Burp Suite proxy.
+2. Intercept the request where you click "Check stock" with Burp Suite proxy, then send it to Burp Suite Repeater.
 3. Modify the value of the `stockApi` field to `http://localhost/admin/delete?username=carlos`, then send the request.
 4. Observe that you receive a `302 Found` HTTP Response that signifies a redirection. Go on to the website. You should see that lab is solved.
 ## Payload Used
@@ -64,6 +64,6 @@ The app fails to validate user-controllable URL before making back-end HTTP requ
 The application takes a user-controlled parameter (`stockApi`) and uses it directly to construct a backend network request without verifying if the target is intended or safe. It also implicitly trusts requests that come from the local machine. These factors allowing for SSRF exploitation.
 ## Remediation
 
- - Change the `stockApi` parameter to accept only the necessary data identifiers, such as `productId` and `storeId`. The server backend should construct the internal API request using these safe identifiers rather than trusting a client-supplied URL.
+-  Change the `stockApi` parameter to accept only the necessary data identifiers, such as `productId` and `storeId`. The server backend should construct the internal API request using these safe identifiers rather than trusting a client-supplied URL.
 - If passing a URL is unavoidable, implement strict server-side validation using a whitelist. The application must verify that the user-supplied input exactly matches a predefined list of permitted URLs or hostnames before initiating the HTTP request. Relying on blocklisting (e.g., blocking `localhost` or `127.0.0.1`) is bad, as attackers can easily bypass this using alternative encodings or DNS rebinding.
 - Implement egress filtering on the server. Deny all outbound traffic by default, and only permit connections to the specific internal IP addresses and ports required for the application to function.
