@@ -9,7 +9,7 @@
 The app contains a vulnerable image upload function, as it does not perform any validation on the files users upload before storing them on the server's filesystem. These server-side uploaded scripts are also configured to be executed as code, allowing us to create our own web shell on the server, thus read arbitrary files from the server's filesystem.
 ## Reconnaissance
 
-Navigate to `url/login` and login with credentials `wiener - peter` (given by the lab). After successfully logging, you'll taken to `url/my-account?id=wiener`, where you'll see an option to upload a file to be your avatar. Try uploading a simple `php` web shell with content below (credits: [Easy simple php webshell](https://gist.github.com/joswr1ght/22f40787de19d80d110b37fb79ac3985) yields a `200 OK` HTTP Response with a response message that reads: 
+Navigate to `url/login` and login with credentials `wiener - peter` (given by the lab). After successfully logging, you'll taken to `url/my-account?id=wiener`, where you'll see an option to upload a file to be your avatar. Try uploading a simple `php` web shell with content below (credits: [Easy simple php webshell](https://gist.github.com/joswr1ght/22f40787de19d80d110b37fb79ac3985)) yields a `200 OK` HTTP Response with a response message that reads: 
 `The file avatars/shell.php has been uploaded.`. This confirms that there's no validation mechanism from the server to ensure that the user does not upload anything malicious.
 ```php
 <html>
@@ -32,12 +32,12 @@ Navigate to `url/login` and login with credentials `wiener - peter` (given by th
 ## Exploitation Steps
 
 1. Navigate to `url/login` and login with credentials `wiener - peter`. You'll taken to `url/my-account?id=wiener`, where you'll see an option to upload a file to be your avatar.
-2. Upload the [PHP shell](shell.php). You'll be redirected to `url/my-account/avatar`, with the message `The file avatars/shell.php has been uploaded.`, and a link to return to your "My Account" page. Click on this link.
-3. On the `url/my-account?id=wiener`, right click on your "avatar" and select "Open Image in New Tab". You'll be taken to `url/files/avatars/shell.php`, with a shell to execute commands. The `php` script has been executed as code, and we have successfully upload a web shell.
+2. Upload the [PHP shell](../shell.php). You'll be redirected to `url/my-account/avatar`, with the message `The file avatars/shell.php has been uploaded.`, and a link to return to your "My Account" page. Click on this link.
+3. On the `url/my-account?id=wiener`, right click on your "avatar" and select "Open Image in New Tab". You'll be taken to `url/files/avatars/shell.php`, with a shell to execute commands. The `php` script has been executed as code, and we have successfully uploaded a web shell.
 4. Execute a simple command `cat /home/carlos/secret` to read the content of the secret file. It will be displayed on the same page after you clicked "Execute". Submit the string as solution, and lab is solved.
 ## Payload Used
 
-- `php` web shell: [PHP shell](shell.php)
+- `php` web shell: [PHP shell](../shell.php)
 - Command to read secret file: `cat /home/carlos/secret`.
 In the `php` execution block:
 ```php
