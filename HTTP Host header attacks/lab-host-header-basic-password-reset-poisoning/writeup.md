@@ -19,7 +19,7 @@ Intercept the `POST /forgot-password` request. The application generates a passw
 5. On the second intercepted request, change the value of the `temp-forgot-password-token` in **both** the HTTP header and body. For the password, you can pick any value you like - this is the value that we will use to access `carlos`'s account. In my case, I pick `a`. The value should look like below. After doing the necessary modifications, send the request.
 ```
 POST /forgot-password?temp-forgot-password-token=carlos'stoken HTTP/1.1
-Host: 0ad5002103b62360811a2a7900870001.web-security-academy.net
+Host: randomstring.web-security-academy.net
 
 ...
 
