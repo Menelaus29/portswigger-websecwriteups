@@ -33,7 +33,7 @@ Navigate to `url/login` and login with credentials `wiener - peter` (given by th
 
 1. Navigate to `url/login` and login with credentials `wiener - peter`. You'll taken to `url/my-account?id=wiener`, where you'll see an option to upload a file to be your avatar.
 2. Upload the [PHP shell](../shell.php). You'll be redirected to `url/my-account/avatar`, with the message `The file avatars/shell.php has been uploaded.`, and a link to return to your "My Account" page. Click on this link.
-3. On the `url/my-account?id=wiener`, right click on your "avatar" and select "Open Image in New Tab". You'll be taken to `url/files/avatars/shell.php`, with a shell to execute commands. The `php` script has been executed as code, and we have successfully uploaded a web shell.
+3. On `url/my-account?id=wiener`, right click on your "avatar" and select "Open Image in New Tab". You'll be taken to `url/files/avatars/shell.php`, with a shell to execute commands. The `php` script has been executed as code, and we have successfully uploaded a web shell.
 4. Execute a simple command `cat /home/carlos/secret` to read the content of the secret file. It will be displayed on the same page after you clicked "Execute". Submit the string as solution, and lab is solved.
 ## Payload Used
 
