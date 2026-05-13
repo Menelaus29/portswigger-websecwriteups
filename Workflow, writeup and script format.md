@@ -77,7 +77,7 @@ def get_csrf_token(session: requests.Session, url: str) -> str:
     
 def exploit(target_url: str) -> None:
     session = requests.Session()
-    # session.proxies = PROXY  # Uncomment to route through Burp
+    # session.proxies = PROXY  # Uncomment to route through Caido
 
     print(f"[*] Target: {target_url}")
 
