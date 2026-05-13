@@ -11,7 +11,7 @@ The app contains a vulnerable image upload function. Though it does attempt to b
 
 After navigating to `url/login` and logging in with credentials `wiener - peter`, we are taken to `url/my-account?id=wiener`, and are presented an option to upload an image as our avatar. Try uploading a [PHP web shell](../shell.php) right away will result in a `403 Forbidden` HTTP Response that, in the response body, reads `Sorry, only JPG & PNG files are allowed`.
 
-Modifying the value of the `Content-Type` header in the HTTP request to `image-jpeg` and sending it again, we see the same response as before: `403 Forbidden`, `Sorry, only JPG & PNG files are allowed`. This suggests that the server does not implicitly trust the value of this header.
+Modifying the value of the `Content-Type` header in the HTTP request to `image/jpeg` and sending it again, we see the same response as before: `403 Forbidden`, `Sorry, only JPG & PNG files are allowed`. This suggests that the server does not implicitly trust the value of this header.
 
 Modifying the file extension from `shell.php` to `shell.php.jpg` then sending the request results in a `200 OK` HTTP Response with the message `The file avatars/shell.php.jpg has been uploaded.`. However, when we try to open this file through `GET /files/avatars/shell.php.jpg`, we get a `304 Not Modified` HTTP Response with the message `The image url/files/avatars/shell.php.jpg cannot be displyed because it contains errors.`. 
 
