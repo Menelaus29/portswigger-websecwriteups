@@ -13,7 +13,7 @@ After navigating to `url/login` and logging in with credentials `wiener - peter`
 
 Try changing the file extension to `.php5` will result in a `200 OK` and successful upload. However, sending a HTTP request `GET /files/avatars/shell.php5` after that lead to a `304 Not Modified` response, with a non-usable shell.
 
-I created a `.htaccess` file, with the hope of overriding the server's configuration. The file's content is as follows:
+I created a `.htaccess` [file](.htaccess), with the hope of overriding the server's configuration. The file's content is as follows:
 `AddType application/x-httpd-php .aaa`
 It makes `.aaa` files be interpreted as `.php` files. Uploading this file will give us a `200 OK`, and message `The file avatars/.htaccess has been uploaded.`. Now we try to upload the web shell again, this time changing the file extension from `.php` to `.aaa`. This time, we get a `200 OK`, and the message `The file avatars/shell.aaa has been uploaded.`.  Try accessing this file through `GET /files/avatars/shell.aaa` will result in a `200 OK` HTTP Response, with an executable web shell. We have successfully uploaded a web shell.
 ## Exploitation Steps
