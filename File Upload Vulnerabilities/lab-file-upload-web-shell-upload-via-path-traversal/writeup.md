@@ -50,12 +50,12 @@ The app prevents server-side script execution in user-accessible directories (`/
 
 1. Navigate to `url/login` and login with the credentials `wiener - peter`.
 2. Upload the [PHP web shell](../shell.php) like normal. Intercept this request.
-3. On the intercepted request in Step 2, modify the `filename` parameter from `filename="shell.php` to `filename="..%2Fshell.php`, and send the request again. Observe that the response has a status code of `200 OK` with the response message `The file avatars/../shell.php has been uploaded.`
+3. On the intercepted request in Step 2, modify the `filename` parameter from `filename="shell.php"` to `filename="..%2Fshell.php"`, and send the request again. Observe that the response has a status code of `200 OK` with the response message `The file avatars/../shell.php has been uploaded.`
 4. On `url/my-account?id=wiener`, right click on your "avatar" and select "Open Image in New Tab". Intercept this request. On this intercepted request, modify the HTTP header from `GET /files/avatars/shell.php HTTP/1.1` to `GET /files/avatars/../shell.php HTTP/1.1` and send the request. You should receive a `200 OK` HTTP Response. Right click on the response, select "View response in browser", then paste the copied URL onto the website. Observe that you have a working shell.
 5. Run `cat /home/carlos/secret` to exfiltrate the contents of the file `/home/carlos/secret`. The app will return a string - this is the "secret". Copy this string and submit, lab is solved.
 ## Payload Used
 
-`filename="..%2Fshell.php`
+`filename="..%2Fshell.php"`
 `GET /files/avatars/../shell.php HTTP/1.1`
 [PHP web shell](../shell.php)
 Command to read the secret string: `cat /home/carlos/secret`.
