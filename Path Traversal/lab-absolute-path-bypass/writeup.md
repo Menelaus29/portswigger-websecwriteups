@@ -26,5 +26,5 @@ The application lacks explicit validation against absolute path inputs. It passe
 ## Remediation
 
 - Avoid passing user-supplied input directly to filesystem APIs. Use an indirect object reference map (e.g., storing a database mapping where id=13 corresponds to image13.jpg on the server)
-- Validate user input with a whitelist without processing it
+- If direct file references are unavoidable, validate user input against a strict whitelist of permitted characters (e.g., strictly alphanumeric). Reject any request containing path separators (`/`, `\`), traversal characters (`.`), or encoding indicators (`%`) outright.
 - Resolve the absolute path using the filesystem API before accessing the file to verify the resolved canonical path isn't something unexpected.
