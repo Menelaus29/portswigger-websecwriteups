@@ -6,10 +6,10 @@
 - **Date Solved:** 20/4/2026
 ## Vulnerability Summary
 
-The app has no defensive mechanisms against path traversal attacks. Specifically, in the `url/image?filename=`, it is possible to inject a payload that traverses through directories to retrieve information from sensitive, meant-to-be-inaccessible files.
+The app has no defensive mechanisms against path traversal attacks. Specifically, in `url/image?filename=`, it is possible to inject a payload that traverses through directories to retrieve information from sensitive, meant-to-be-inaccessible files.
 ## Reconnaissance
 
-- The request to open a product image in new tab has the HTTP header in the form of `GET /image?filename=6.jpg`. Changing the `filename` field's value to another file, e.g. `etc/passwd`, we get a `400 Bad Request` HTTP response that reads `No such file` in the response message. We get the same response with `../etc/passwd`. This confirms that we can access other files in the file system, and directory traversal is possible.
+- The request to open a product image in new tab has the HTTP header in the form of `GET /image?filename=6.jpg`. Changing the `filename` field's value to another file, e.g. `/etc/passwd`, we get a `400 Bad Request` HTTP response that reads `No such file` in the response message. We get the same response with `../etc/passwd`. This confirms that we can access other files in the file system, and directory traversal is possible.
 ## Exploitation Steps
 
 1. Click the "View details" button on any random item.
