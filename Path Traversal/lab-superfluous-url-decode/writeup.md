@@ -14,7 +14,7 @@ The request to open a product image in new tab has the HTTP header in the form o
 
 1. Click the "View details" button on any random item.
 2. As you get to the product page (with URL something like `url/product?productId=2`), right click on the product image and select "Open Image in New Tab". Intercept the request to open the image in new tab.
-3. The intercepted request's HTTP header would be in the form of `GET /image?filename=13.jpg`. Modify the value of the `filename` field to `%2%45%2%45%2F%2%45%2%45%2F%2%45%2%45%2Fetc%2Fpasswd` 
+3. The intercepted request's HTTP header would be in the form of `GET /image?filename=13.jpg`. Modify the value of the `filename` field to `%2%45%2%45%2F%2%45%2%45%2F%2%45%2%45%2Fetc%2Fpasswd` and send the request.
 4. Observe that the HTTP response has a status code `200 OK` and returns the contents of the `/etc/paswd` file. Lab is solved.
 ## Payload Used
 

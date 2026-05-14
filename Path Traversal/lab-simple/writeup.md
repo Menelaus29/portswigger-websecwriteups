@@ -14,7 +14,7 @@ The app has no defensive mechanisms against path traversal attacks. Specifically
 
 1. Click the "View details" button on any random item.
 2. As you get to the product page (with URL something like `url/product?productId=2`), right click on the product image and select "Open Image in New Tab". Intercept the request to open the image in new tab with Burp Suite proxy.
-3. The intercepted request's HTTP header would be in the form of `GET /image?filename=6.jpg`. Modify the value of the `filename` field to `../../../etc/passwd`. 
+3. The intercepted request's HTTP header would be in the form of `GET /image?filename=6.jpg`. Modify the value of the `filename` field to `../../../etc/passwd` and send the request.
 4. Observe that the HTTP response has a status code `200 OK` and returns the contents of the `etc/paswd` file. Lab is solved.
 ## Payload Used
 
