@@ -17,7 +17,7 @@ However, if we add a traversal sequence after the path and send the request: `GE
 1. Click the "View details" button on any random item.
 2. As you get to the product page (with URL something like `url/product?productId=2`), right click on the product image and select "Open Image in New Tab". Intercept the request to open the image in new tab.
 3. The intercepted request's HTTP header would be in the form of `GET /image?filename=/var/www/images/30.jpg`. Modify the value of the `filename` field to `GET /image?filename=/var/www/images/../../../etc/passwd` and send the request.
-4. Observe that the HTTP response has a status code `200 OK` and returns the contents of the `/etc/paswd` file. Lab is solved.
+4. Observe that the HTTP response has a status code `200 OK` and returns the contents of the `/etc/passwd` file. Lab is solved.
 ## Payload Used
 
 `/var/www/images/../../../etc/passwd`
