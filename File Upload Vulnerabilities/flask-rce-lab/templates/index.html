@@ -723,7 +723,7 @@
       <div class="info-box">
         <p>The uploaded filename is passed raw into Flask's <code>render_template_string()</code>. Jinja2 evaluates <code>&#123;&#123; &#125;&#125;</code> expressions inside the string, including arbitrary Python code reachable through the object graph.</p>
         <p class="vuln-line">▶ Vulnerable call: render_template_string("... filename ...")</p>
-        <p>Submit the flag at flag/ssti.txt to solve the lab.</p>
+        <p>Submit the flag at flags/ssti.txt to solve the lab.</p>
       </div>
 
       <div class="payload-box">
@@ -811,7 +811,7 @@
       <div class="info-box">
         <p>The server calls <code>pickle.loads()</code> directly on the uploaded file bytes. Python's pickle format stores reconstruction instructions — overriding <code>__reduce__</code> tells pickle to call any OS command during deserialization.</p>
         <p class="vuln-line">▶ Vulnerable call: pickle.loads(f.read())</p>
-        <p>Submit the flag at flag/pickle.txt to solve the lab.</p>
+        <p>Submit the flag at flags/pickle.txt to solve the lab.</p>
       </div>
 
       <div class="payload-box">
@@ -894,7 +894,7 @@
       <div class="info-box">
         <p>The server calls <code>yaml.load(data, Loader=yaml.UnsafeLoader)</code> on the uploaded file. PyYAML's <code>!!python/object/apply:</code> tag instructs the loader to call any Python callable with attacker-supplied arguments.</p>
         <p class="vuln-line">▶ Vulnerable call: yaml.load(data, Loader=yaml.UnsafeLoader)</p>
-        <p>Submit the flag at flag/yaml.txt to solve the lab.</p>
+        <p>Submit the flag at flags/yaml.txt to solve the lab.</p>
       </div>
 
       <div class="payload-box">
@@ -977,7 +977,7 @@
       <div class="info-box">
         <p>The filename is joined to the upload directory using <code>os.path.join()</code>.</p>
         <p class="vuln-line">▶ Vulnerable call: os.path.join(UPLOAD_DIR, filename)</p>
-        <p>Submit the flag at flag/traversal.txt to solve the lab.</p>
+        <p>Submit the flag at flags/traversal.txt to solve the lab.</p>
       </div>
 
       <div class="payload-box">
@@ -1065,7 +1065,7 @@
       <div class="info-box">
         <p>The server extracts uploaded zip files using <code>zipfile.extractall()</code> with no path validation.</p>
         <p class="vuln-line">▶ Vulnerable call: zf.extractall(EXTRACT_DIR)</p>
-        <p>Submit the flag at flag/zipslip.txt to solve the lab.</p>
+        <p>Submit the flag at flags/zipslip.txt to solve the lab.</p>
       </div>
 
       <div class="payload-box">
