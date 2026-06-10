@@ -1,0 +1,9 @@
+# Exploit script dependencies
+requests
+beautifulsoup4
+urllib3
+
+# Self-made Flask RCE lab dependencies
+flask>=3.0.0
+pyyaml>=6.0.1
+pillow>=10.0.0
