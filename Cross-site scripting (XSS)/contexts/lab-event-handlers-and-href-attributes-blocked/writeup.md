@@ -11,9 +11,9 @@ The app contains a XSS vulnerability in the search function. Though it does atte
 
 - Entering a normal string like `aaa` into the search bar produces this request: `GET /?search=aaa`, and the string is reflected back in the response body inside a `<h1>` element: `<h1>0 search results for 'aaa'</h1>`. User input is being placed directly into the HTML without escaping.
 - Trying to inject `<script>alert(1)</script>` to the search parameter, we get a `400 Bad Request` HTTP response that reads `"Tag is not allowed"`. We need to find tags and events that are allowed.
-- Type in a random string in the search bar and intercept this request. Modify the header of the request to `GET /?search=<> HTTP/2` and add payload position between the angle brackets. Paste the tags on [XSS Cheatsheet](https://portswigger.net/web-security/cross-site-scripting/cheat-sheet) onto the list of payloads to be used, then start the tags enumeration. After it's done, sort the status code column in ascending order, as we need to find the allowed tags with `200 OK` HTTP Responses. You should see that these tags are allowed: `<a>`, `<animate>`, `<image>`, `<svg>`, `<title>`.
+- Type in a random string in the search bar and intercept this request. Modify the request line to `GET /?search=<> HTTP/2` and add payload position between the angle brackets. Paste the tags on [XSS Cheatsheet](https://portswigger.net/web-security/cross-site-scripting/cheat-sheet) onto the list of payloads to be used, then start the tags enumeration. After it's done, sort the status code column in ascending order, as we need to find the allowed tags with `200 OK` HTTP Responses. You should see that these tags are allowed: `<a>`, `<animate>`, `<image>`, `<svg>`, `<title>`.
 ![alt text](image.png)
-- We use one of these tags (e.g. `<svg>`) to enumerate through the events to to see what's allowed. Like the lab's name suggests, all of them are blocked.
+- We use one of these tags (e.g. `<svg>`) to enumerate through the events to see what's allowed. Like the lab's name suggests, all of them are blocked.
 ![alt text](image-1.png)
 - We need to use the tags to deliver the XSS payload.
 ## Exploitation Steps
