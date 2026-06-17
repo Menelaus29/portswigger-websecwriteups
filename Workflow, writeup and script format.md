@@ -82,6 +82,13 @@ def exploit(target_url: str) -> None:
     print(f"[*] Target: {target_url}")
 
     # --- YOUR EXPLOIT LOGIC HERE ---
+    print("[*] Verifying lab completion status...")
+
+    verify_resp = session.get(target_url, verify=False)
+    if "Congratulations, you solved the lab!" in verify_resp.text:
+        print("[+] Lab solved successfully!")
+    else:
+        print("[-] Lab not solved. Verify payload logic.")
     
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
