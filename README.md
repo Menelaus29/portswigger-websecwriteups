@@ -19,7 +19,7 @@ Each count represents completed writeups currently in this repository.
 | [File upload vulnerabilities](./File%20Upload%20Vulnerabilities/) | 2/2 | 4/4 | 1/1 |
 | [HTTP Host header attacks](./HTTP%20Host%20header%20attacks/) | 1/2 | 0/4 | 0/1 |
 | [Path traversal](./Path%20Traversal/) | 1/1 | 5/5 | - |
-| [Server-side request forgery (SSRF)](./Server-side%20Request%20Forgery%20%28SSRF%29/) | 2/2 | 0/3 | 0/2 |
+| [Server-side request forgery (SSRF)](./Server-side%20Request%20Forgery%20%28SSRF%29/) | 2/2 | 1/3 | 0/2 |
 | [SQL injection](./SQLi/) | 2/2 | 16/16 | - |
 
 ## Repository Structure
