@@ -4,7 +4,6 @@
 - **Category:** SSRF
 - **Lab URL:** [Lab: SSRF with blacklist-based input filter](https://portswigger.net/web-security/ssrf/lab-ssrf-with-blacklist-filter)
 - **Date Solved:** 10/8/2026
-  
 ## Vulnerability Summary
 
 The app is vulnerable to Server-side Request Forgery (SSRF) in the stock checking functionality. Specifically, an attacker can supply a URL in the `stockApi` parameter in the request made by the server in the process of stock checking for the server to make a request to the `/admin` endpoint from the local machine, which the app implicitly trusts. Though there are some SSRF defenses in place, these mechanisms are weak and can be easily bypassed with case variation. 
