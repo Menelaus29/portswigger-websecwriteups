@@ -20,7 +20,7 @@ Each count represents completed writeups currently in this repository.
 | [HTTP Host header attacks](./HTTP%20Host%20header%20attacks/) | 1/2 | 0/4 | 0/1 |
 | [Path traversal](./Path%20Traversal/) | 1/1 | 5/5 | - |
 | [Server-side request forgery (SSRF)](./Server-side%20Request%20Forgery%20%28SSRF%29/) | 2/2 | 3/3 | 2/2 |
-| [OS Command Injection](./OS%20Command%20Injection) | 1/1 | 2/4 | - |
+| [OS Command Injection](./OS%20Command%20Injection) | 1/1 | 3/4 | - |
 | [SQL injection](./SQLi/) | 2/2 | 16/16 | - |
 
 ## Repository Structure
