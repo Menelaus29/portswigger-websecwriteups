@@ -16,7 +16,7 @@ Each count represents completed writeups currently in this repository.
 | [Access control vulnerabilities](./Access%20Control%20Vulnerabilities/) | 9/9 | 4/4 | - |
 | [Authentication](./Authentication/) | 3/3 | 8/9 | 2/2 |
 | [Cross-site scripting (XSS)](./Cross-site%20scripting%20%28XSS%29/) | 9/9 | 15/16 | 3/5 |
-| [Cross-site Request Forgery (CSRF)](./Cross-site%20Request%20Forgery%20%28CSRF%29/) | 1/1 | 5/10 | - | 
+| [Cross-site Request Forgery (CSRF)](./Cross-site%20Request%20Forgery%20%28CSRF%29/) | 1/1 | 6/10 | - | 
 | [File upload vulnerabilities](./File%20Upload%20Vulnerabilities/) | 2/2 | 4/4 | 1/1 |
 | [HTTP Host header attacks](./HTTP%20Host%20header%20attacks/) | 1/2 | 0/4 | 0/1 |
 | [OS Command Injection](./OS%20Command%20Injection) | 1/1 | 4/4 | - |
