@@ -23,6 +23,7 @@ Each count represents completed writeups currently in this repository.
 | [Path traversal](./Path%20Traversal/) | 1/1 | 5/5 | - |
 | [Server-side request forgery (SSRF)](./Server-side%20Request%20Forgery%20%28SSRF%29/) | 2/2 | 3/3 | 2/2 |
 | [SQL injection](./SQLi/) | 2/2 | 16/16 | - |
+| [WebSockets](./WebSockets/) | 1/1 | 0/2 | - |
 
 ## Repository Structure
 
