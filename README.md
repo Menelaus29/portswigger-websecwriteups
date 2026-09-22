@@ -20,7 +20,7 @@ Each count represents completed writeups currently in this repository.
 | [Cross-site Request Forgery (CSRF)](./Cross-site%20Request%20Forgery%20%28CSRF%29/) | 1/1 | 10/10 | - | 
 | [File upload vulnerabilities](./File%20Upload%20Vulnerabilities/) | 2/2 | 4/4 | 1/1 |
 | [HTTP Host header attacks](./HTTP%20Host%20header%20attacks/) | 1/2 | 0/4 | 0/1 |
-| [Information disclosure](./Information%20disclosure/) | 1/4 | 0/1 | - |
+| [Information disclosure](./Information%20disclosure/) | 2/4 | 0/1 | - |
 | [OS Command Injection](./OS%20Command%20Injection) | 1/1 | 4/4 | - |
 | [Path traversal](./Path%20Traversal/) | 1/1 | 5/5 | - |
 | [Server-side request forgery (SSRF)](./Server-side%20Request%20Forgery%20%28SSRF%29/) | 2/2 | 3/3 | 2/2 |
