@@ -2,6 +2,7 @@
 requests
 beautifulsoup4
 urllib3
+git-dumper
 
 # Self-made Flask RCE lab dependencies
 flask>=3.0.0
