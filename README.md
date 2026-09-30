@@ -14,7 +14,7 @@ Each count represents completed writeups currently in this repository.
 | Vulnerability | Apprentice | Practitioner | Expert |
 | --- | :---: | :---: | :---: |
 | [Access control vulnerabilities](./Access%20Control%20Vulnerabilities/) | 9/9 | 4/4 | - |
-| [API testing](./API%20testing/) | 1/1 | 2/3 | 0/1 |
+| [API testing](./API%20testing/) | 1/1 | 3/3 | 0/1 |
 | [Authentication](./Authentication/) | 3/3 | 9/9 | 2/2 |
 | [Business logic vulnerabilities](./Business%20logic%20vulnerabilities/) | 4/4 | 7/7 | 0/1 |
 | [Cross-site scripting (XSS)](./Cross-site%20scripting%20%28XSS%29/) | 9/9 | 15/16 | 3/5 |
