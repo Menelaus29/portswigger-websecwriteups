@@ -9,7 +9,7 @@
 The app supports the `jku` parameter in the JWT header to locate the JSON Web Key Set (JWKS) containing the public key needed for signature verification. However, the server fails to validate whether the URL provided in the `jku` parameter belongs to a trusted whitelist. This allows an attacker to host a malicious JWKS on the provided exploit server, sign a forged administrative token with an attacker-controlled private RSA key, and direct the server via `jku` to fetch the matching public key. The server deems the forged token valid, enabling full authentication bypass and privilege escalation to delete the user `carlos`.
 ## Reconnaissance
 
-- Navigate to the `/login` endpoint and login with the credentials `wiener:peter``.
+- Navigate to the `/login` endpoint and login with the credentials `wiener:peter`.
 - Inspect the HTTP history in Burp Suite with the `JWT Editor` extension enabled. Observe that requests to `/my-account?id=wiener` include a `Session` cookie holding a JSON Web Token.
 - Send the `GET /my-account?id=wiener` request to Repeater and inspect the decoded token in the `JSON Web Token` tab:
 ![alt text](image.png)
@@ -41,7 +41,6 @@ This is also the URL we will be injecting into the `jku` field of the header por
 - Then sign the token, using your generated key as the signing key and the signing algorithm `RS256`.
 Using this newly crafted JWT, we get a `200 OK` sending a request to the `/admin` endpoint. We have successfully crafted a valid `adminstrator` JWT by using our own pair of public-private RSA keys.
 ## Exploitation Steps
-
 
 Follow the steps to craft a valid JWT in the **Reconnaissance** section. Then, modify the request line to `GET /admin/delete?username=carlos HTTP/2` and send the request. `carlos` should be deleted successfully and lab is solved.
 ## Payload Used

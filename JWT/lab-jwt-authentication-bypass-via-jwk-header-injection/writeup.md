@@ -9,7 +9,7 @@
 The server supports the `jwk` parameter in the JWT header. This is used to embed the correct verification key directly in the JWT. However, it fails to check if the provided key comes from the trusted source. This allows us to create our own private key, sign a modified JWT with it, then embed the matching public key in the `jwk` header. The resulting JWT is valid, granting us administrative functionalities that includes the ability to delete the user `carlos`.
 ## Reconnaissance
 
- - Navigate to the `/login` endpoint and login with the credentials `wiener:peter`. If you are using Burp and have the extension `JWT Editor` installed (which you should), you should see that there are requests that are highlighted - those are the requests that contain a JWT. 
+- Navigate to the `/login` endpoint and login with the credentials `wiener:peter`. If you are using Burp and have the extension `JWT Editor` installed (which you should), you should see that there are requests that are highlighted - those are the requests that contain a JWT. 
 - Sending the `GET /my-account?id=wiener` request to Repeater and using the `JSON Web Token` tab reveals the structure of the header and payload portions: 
 ![alt text](image.png)
 The server uses `RS256`, an asymmetric digital signature algorithm. 
