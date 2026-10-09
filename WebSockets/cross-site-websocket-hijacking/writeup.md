@@ -14,7 +14,7 @@ The app has a live chat feature that is vulnerable to Cross-site Request Forgery
 {"message":"aaa"}
 ```
 - When the page is reloaded, notice that there's a websocket request to the server with the command `READY`, that the server uses to retrieve the chat log:
-![alt text](image.png)
+![alt text](<Screenshot 2026-09-10 144105.png>)
 - It is also observed that the WebSocket handshake request contains no anti-CSRF token, and the only session token is transmitted in a cookie:
 ![alt text](image-2.png)
 With these information, we can use deliver a payload to the victim that sends the `READY` command to the server, then fetch the data (chat log) and make a `POST` request to our external domain (provided by Burp Collaborator).

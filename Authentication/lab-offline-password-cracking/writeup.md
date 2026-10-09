@@ -11,8 +11,7 @@ The app uses a weak hashing algorithm to hash user passwords and stores this dig
 
 - After logging in with the credentials `wiener - peter` with `Stay logged in` ticked, we are taken to the `/my-account?id=wiener` endpoint. Reloading this page produces a `GET /my-account?id=wiener` HTTP request, where existed a `stay-logged-in` cookie. Highlighting this value with Burp makes it automatically identify the encoding technique and decoding it as below:
 ![alt text](image.png)
-The `stay-logged-in` cookie is in the form of `base64(username:digest-value)`. This value is the password `peter`, hashed with MD5:
-![alt text](image-1.png)
+The `stay-logged-in` cookie is in the form of `base64(username:digest-value)`. This value is the password `peter`, hashed with MD5.
 Using this info, we can infer that the `stay-logged-in` cookie for `carlos` is `base64(carlos:md5(carlos's password))`. This means that if we can find `carlos`'s cookie and crack the password, we can gain access to their account.
 - As mentioned by the lab's description, the app blog's comment functionality also contains an XSS vulnerability. This vulnerability exists in the `comment` parameter, as injecting a standard XSS payload `<script>alert(1)</script>` into it invokes the `alert()` function, and the dialogue box is shown on the website:
 ![alt text](image-2.png)
