@@ -29,7 +29,7 @@ Each count represents completed writeups currently in this repository.
 | [Server-side request forgery (SSRF)](./Server-side%20Request%20Forgery%20%28SSRF%29/) | 2/2 | 3/3 | 2/2 |
 | [SQL injection](./SQLi/) | 2/2 | 16/16 | - |
 | [WebSockets](./WebSockets/) | 1/1 | 2/2 | - |
-| [XXE injection](./XXE%20injection/) | 1/2 | 0/6 | 0/1 |
+| [XXE injection](./XXE%20injection/) | 2/2 | 0/6 | 0/1 |
 
 ## Repository Structure
 
